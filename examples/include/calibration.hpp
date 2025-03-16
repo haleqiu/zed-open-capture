@@ -4219,6 +4219,7 @@ bool initCalibration(std::string calibration_file, cv::Size2i image_size, cv::Ma
     float left_cam_p1 = camerareader.getValue("left_cam_" + resolution_str + ":p1", 0.0f);
     float left_cam_p2 = camerareader.getValue("left_cam_" + resolution_str + ":p2", 0.0f);
     float left_cam_k3 = camerareader.getValue("left_cam_" + resolution_str + ":k3", 0.0f);
+    float left_cam_k4 = camerareader.getValue("left_cam_" + resolution_str + ":k4", 0.0f);
 
     // Get right parameters
     float right_cam_cx = camerareader.getValue("right_cam_" + resolution_str + ":cx", 0.0f);
@@ -4230,6 +4231,7 @@ bool initCalibration(std::string calibration_file, cv::Size2i image_size, cv::Ma
     float right_cam_p1 = camerareader.getValue("right_cam_" + resolution_str + ":p1", 0.0f);
     float right_cam_p2 = camerareader.getValue("right_cam_" + resolution_str + ":p2", 0.0f);
     float right_cam_k3 = camerareader.getValue("right_cam_" + resolution_str + ":k3", 0.0f);
+    float right_cam_k4 = camerareader.getValue("right_cam_" + resolution_str + ":k4", 0.0f);
 
     // (Linux only) Safety check A: Wrong "." or "," reading in file conf.
 #ifndef _WIN32
@@ -4257,27 +4259,36 @@ bool initCalibration(std::string calibration_file, cv::Size2i image_size, cv::Ma
 
     // Left
     cameraMatrix_left = (cv::Mat_<double>(3, 3) << left_cam_fx, 0, left_cam_cx, 0, left_cam_fy, left_cam_cy, 0, 0, 1);
-    distCoeffs_left = (cv::Mat_<double>(5, 1) << left_cam_k1, left_cam_k2, left_cam_p1, left_cam_p2, left_cam_k3);
+    // distCoeffs_left = (cv::Mat_<double>(5, 1) << left_cam_k1, left_cam_k2, left_cam_p1, left_cam_p2, left_cam_k3);
+    distCoeffs_left = (cv::Mat_<double>(4, 1) << left_cam_k1, left_cam_k2, left_cam_k3, left_cam_k4);
 
     // Right
     cameraMatrix_right = (cv::Mat_<double>(3, 3) << right_cam_fx, 0, right_cam_cx, 0, right_cam_fy, right_cam_cy, 0, 0, 1);
-    distCoeffs_right = (cv::Mat_<double>(5, 1) << right_cam_k1, right_cam_k2, right_cam_p1, right_cam_p2, right_cam_k3);
+    // distCoeffs_right = (cv::Mat_<double>(5, 1) << right_cam_k1, right_cam_k2, right_cam_p1, right_cam_p2, right_cam_k3);
+    distCoeffs_right = (cv::Mat_<double>(4, 1) << right_cam_k1, right_cam_k2, right_cam_k3, right_cam_k4);
 
     // Stereo
     cv::Mat T = (cv::Mat_<double>(3, 1) << T_[0], T_[1], T_[2]);
+    std::cout << "T: " << T << std::endl;   
     std::cout << " Camera Matrix L: \n" << cameraMatrix_left << std::endl << std::endl;
     std::cout << " Camera Matrix R: \n" << cameraMatrix_right << std::endl << std::endl;
-
+    std::cout << "distor coefficent L: \n" << distCoeffs_left << std::endl << std::endl;
+    std::cout << "distor coefficent R: \n" << distCoeffs_right << std::endl << std::endl;
     cv::Mat R1, R2, P1, P2, Q;
-    cv::stereoRectify(cameraMatrix_left, distCoeffs_left, cameraMatrix_right, distCoeffs_right, image_size, R, T,
-            R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 0, image_size);
+    // cv::stereoRectify(cameraMatrix_left, distCoeffs_left, cameraMatrix_right, distCoeffs_right, image_size, R, T,
+            // R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 0, image_size);
+    cv::fisheye::stereoRectify(cameraMatrix_left, distCoeffs_left, cameraMatrix_right, distCoeffs_right, image_size, R, T,
+            R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, image_size, 0.0, 1.0);
 
     //Precompute maps for cv::remap()
-    initUndistortRectifyMap(cameraMatrix_left, distCoeffs_left, R1, P1, image_size, CV_32FC1, map_left_x, map_left_y);
-    initUndistortRectifyMap(cameraMatrix_right, distCoeffs_right, R2, P2, image_size, CV_32FC1, map_right_x, map_right_y);
+    cv::fisheye::initUndistortRectifyMap(cameraMatrix_left, distCoeffs_left, R1, P1, image_size, CV_32FC1, map_left_x, map_left_y);
+    cv::fisheye::initUndistortRectifyMap(cameraMatrix_right, distCoeffs_right, R2, P2, image_size, CV_32FC1, map_right_x, map_right_y);
 
     cameraMatrix_left = P1;
     cameraMatrix_right = P2;
+
+    std::cout << " Camera Matrix L: \n" << cameraMatrix_left << std::endl << std::endl;
+    std::cout << " Camera Matrix R: \n" << cameraMatrix_right << std::endl << std::endl;
 
     return 1;
 }
