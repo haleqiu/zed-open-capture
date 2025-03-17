@@ -211,6 +211,19 @@ if(BUILD_EXAMPLES)
             RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         )
 
+        ##### Sync Save Example
+        set(SYNC_SAVE_EXAMPLE ${PROJECT_NAME}_rect_save)
+        include_directories( ${PROJECT_SOURCE_DIR}/examples/include)
+        add_executable(${SYNC_SAVE_EXAMPLE} "${PROJECT_SOURCE_DIR}/examples/zed_oc_rect_save.cpp")
+        set_target_properties(${SYNC_SAVE_EXAMPLE} PROPERTIES PREFIX "")
+        target_link_libraries(${SYNC_SAVE_EXAMPLE}
+            ${PROJECT_NAME}
+            ${OpenCV_LIBS}
+        )
+        install(TARGETS ${SYNC_SAVE_EXAMPLE}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+        )
+
         ##### Depth Example
         find_package(OpenMP)
 
